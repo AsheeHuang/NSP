@@ -1,10 +1,15 @@
 from random import sample,randint
 class Chromosome:
-    def __init__(self,nurse_num,day_num,shift_num,requirement,preference):
+    def __init__(self,nurse_num=0,day_num=0,shift_num=0,requirement=0,preference=0,schedule = []):
         Chromosome.preference = preference
         Chromosome.requirement = requirement
-        self.create(nurse_num,day_num,shift_num,requirement) #create feasible chromosome
-
+        if schedule == [] :
+            self.create(nurse_num,day_num,shift_num,requirement) #create feasible chromosome
+        else :
+            self.schedule = schedule
+            if self.isFeasible() != True:
+                self.fitness = -1
+            self.fitness=self.cal_fitness()
     def create(self,nurse_num,day_num,shift_num,requirement):
         # until this chromosome is feasible
         while True :
@@ -62,7 +67,7 @@ class Chromosome:
         #     print(i)
     def cal_fitness(self):
         preference_matrix = Chromosome.preference
-        def preference_fitness(preference, schedule = self.schedule):
+        def fitness_preference(preference, schedule = self.schedule):
             sum_preference = 0
             for i in range(0, len(preference)):
                 for j in range(0, len(preference[0])):
@@ -96,14 +101,30 @@ class Chromosome:
                             sum_OnDutyOver7 = 0
 
             return sum_OnDutyOver7
+        def fitness_StayupOver3(schedule = self.schedule):
+            sum_StayupOver3 = 0
+            StayupDays_Count = 0
+            for i in range(0, len(schedule)):
+                for j in range(0, len(schedule[0])):
+                    if (j % 4 == 2 and schedule[i][j] == 1):
+                        StayupDays_Count += 1
+                        # print("Stayup at {0} {1}".format(i, j))
+                        if (StayupDays_Count >= 3):
+                            sum_StayupOver3 += 1
+                    elif (j % 4 == 2 and schedule[i][j] == 0):
+                        StayupDays_Count = 0
+
+            return sum_StayupOver3
+
         # ----------------------------------------------------------------#
         fitness = 0
-        constraint = [0]*3
-        penalty = [1,200,200]
+        constraint = [0]*4
+        penalty = [1,50,50,70]
 
-        constraint[0] = preference_fitness(preference_matrix)
+        constraint[0] = fitness_preference(preference_matrix)
         constraint[1] = fitness_OffDayOver3()
         constraint[2] = fitness_OnDutyOver7()
+        constraint[3] = fitness_StayupOver3()
 
         if len(constraint) == len(penalty):
             for i in range(len(constraint)) :
@@ -211,4 +232,48 @@ class Chromosome:
         return TSchedule;
 
         # transform(None)
+    def mutation(self):
+        def fix(n,d,s,m): #nurse ,day, origin shift,current shift
+            origin_schedule = self.schedule
+
+            count = 0
+            #fix 5 time , if infeasible ,add penalty
+            while count < 5 :
+                if Chromosome.requirement[d][s] > self.count_nurse(d,s):
+                    candidate = []
+                    for i in range(len(self.schedule)) :
+                        if i != n :
+                            candidate.append(i)
+                    sel =  randint(0,len(candidate)-1)
+                    candidate.pop(sel)
+                    self.change_shift(sel,d,s)
+                if self.isFeasible() == True :
+                    break
+                count += 1
+            if count == 4 :
+                self.schedule = origin_schedule
+                # print('infeasible')
+                # print('success mutation')
+
+        n = randint(0,len(self.schedule)-1)
+        d = randint(0,len(self.schedule[0])/4-1)
+        # print(self.schedule[n][d*4:d*4+4])
+
+        for i in range(4):
+            if self.schedule[n][d*4+i] == 1 :
+                shift_num = randint(1,3)
+                self.schedule[n][d*4+i] = 0
+                self.schedule[n][d*4+(i+shift_num)%4] = 1
+
+                fix(n,d,i,(i+shift_num)%4)
+                break
+        # print(self.schedule[n][d * 4:d * 4 + 4])
+    def change_shift(self,nurse,day,shift):
+        self.schedule[nurse][4 * day] = 0
+        self.schedule[nurse][4 * day +1] = 0
+        self.schedule[nurse][4 * day +2] = 0
+        self.schedule[nurse][4 * day +3] = 0
+        self.schedule[nurse][4 * day + shift] = 1
+
+
 

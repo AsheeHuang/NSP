@@ -1,15 +1,16 @@
 import Chromosome
-from random import sample,randint
+from random import sample,randint,random
 class GA :
     chromosomes = []
-
+    best = 100000000000
+    best_sol = []
     def __init__(self,dir,population) :
         self.population = population
         self.read_data(dir)
         for i in range(population) :
             self.chromosomes.append(Chromosome.Chromosome(self.nurse_num,self.day_num,self.shift_num,self.requirement,self.preference))
 
-    def Run(self,total_count = 3000,select_pair = 4):
+    def Run(self,total_count = 20000,select_pair = 4):
         def Select():
             p_pool = []
             for i in range(select_pair):
@@ -32,13 +33,37 @@ class GA :
                     child[i][j] = sParent[i][j]
 
             return child
+        def del_worst():
+            while len(self.chromosomes) > self.population:
+                min = 0
+                for i in range(1,len(self.chromosomes)):
+                    if self.chromosomes[i].fitness > self.chromosomes[min].fitness :
+                        min = i
+                self.chromosomes.pop(min)
+
         count = 0
         #-------------Start Running--------------#
         while count < total_count :
             p1,p2 = Select()
             c_schedule = Crossover(self.chromosomes[p1].schedule,self.chromosomes[p2].schedule)
-
+            newC = Chromosome.Chromosome(requirement=self.requirement,preference = self.preference,schedule = c_schedule)
+            # if feasible
+            if newC.fitness > 0 :
+                if random() < 0.3 :
+                    newC.mutation()
+                    newC.fitness = newC.cal_fitness()
+                self.chromosomes.append(newC)
+                if newC.fitness < self.best :
+                    self.best = newC.fitness
+                    self.best_sol = newC.schedule
+            del_worst()
             count += 1
+        print(self.best)
+        trans = self.transform(self.best_sol)
+        for i in trans :
+            print(i)
+
+
     def read_data(self,dir):
         data = open(dir,'r')
         data = data.read().split('\n')
@@ -64,8 +89,49 @@ class GA :
         # for i in self.requirement:
         #     print(i)
         # print(self.preference)
+    def transform(self,schedule):
+        # scheldule=[[0,1,0,0,0,0,1,0,1,0,0,0],[1,0,0,0,1,0,0,0,0,0,0,1]]
+        TSchedule = [[0 for j in range(0, int(len(schedule[0]) / 4))] for i in range(0, int(len(schedule)))]
+        nurseCount = 0;
+        zeroCount = 0;
+        for i in range(0, len(schedule)):
+            if TSchedule == None:
+                break
 
+            for j in range(0, len(schedule[i])):
+                if zeroCount == 4:
+                    TSchedule = None
+                    break;
 
+                if j % 4 == 0:
+                    nurseCount = 0
+                    zeroCount = 0
+
+                if (schedule[i][j] == 1):
+                    if (j % 4 == 0):
+                        TSchedule[i][int(j / 4)] = 1
+                        nurseCount = nurseCount + 1
+
+                    elif (j % 4 == 1):
+                        TSchedule[i][int(j / 4)] = 2
+                        nurseCount = nurseCount + 1
+
+                    elif (j % 4 == 2):
+                        TSchedule[i][int(j / 4)] = 3
+                        nurseCount = nurseCount + 1
+
+                    elif (j % 4 == 3):
+                        TSchedule[i][int(j / 4)] = 4
+                        nurseCount = nurseCount + 1
+
+                else:
+                    zeroCount = zeroCount + 1
+
+                if nurseCount > 1:
+                    TSchedule = None
+                    break;
+        # print (TSchedule)
+        return TSchedule;
 if __name__ =='__main__' :
     dir = './data/1.nsp'
     data = open(dir,'r')
