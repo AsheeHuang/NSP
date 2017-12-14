@@ -1,15 +1,9 @@
 from random import sample,randint
 class Chromosome:
-    def __init__(self,nurse_num=0,day_num=0,shift_num=0,requirement=0,preference=0,schedule = []):
+    def __init__(self,nurse_num=0,day_num=0,shift_num=0,requirement=0,preference=0):
         Chromosome.preference = preference
         Chromosome.requirement = requirement
-        if schedule == [] :
-            self.create(nurse_num,day_num,shift_num,requirement) #create feasible chromosome
-        else :
-            self.schedule = schedule
-            if self.isFeasible() != True:
-                self.fitness = -1
-            self.fitness=self.cal_fitness()
+        self.create(nurse_num,day_num,shift_num,requirement) #create feasible chromosome
     def create(self,nurse_num,day_num,shift_num,requirement):
         # until this chromosome is feasible
         while True :
@@ -65,15 +59,18 @@ class Chromosome:
         #     print(i)
         # for i in self.schedule:
         #     print(i)
+
     def cal_fitness(self):
         preference_matrix = Chromosome.preference
-        def fitness_preference(preference, schedule = self.schedule):
+
+        def fitness_preference(preference, schedule=self.schedule):
             sum_preference = 0
             for i in range(0, len(preference)):
                 for j in range(0, len(preference[0])):
                     sum_preference += pow(preference[i][j], 2) * self.schedule[i][j]
             return sum_preference
-        def fitness_OffDayOver3(schedule = self.schedule):
+
+        def fitness_OffDayOver3(schedule=self.schedule):
             sum_OffDayOver3 = 0
             OffDayCount = 0
             for i in range(0, len(schedule)):
@@ -87,7 +84,8 @@ class Chromosome:
                             OffDayCount = 0
 
             return sum_OffDayOver3
-        def fitness_OnDutyOver7(schedule = self.schedule):
+
+        def fitness_OnDutyOver7(schedule=self.schedule):
             sum_OnDutyOver7 = 0
             OndutyCount = 0
             for i in range(0, len(schedule)):
@@ -95,13 +93,14 @@ class Chromosome:
                     if (j % 4 == 3):
                         if (schedule[i][j] != 1):
                             OndutyCount += 1
-                            if (OndutyCount >= 7):
+                            if (OndutyCount >= 6):
                                 sum_OnDutyOver7 += 1
                         else:
-                            sum_OnDutyOver7 = 0
+                            OndutyCount = 0
 
             return sum_OnDutyOver7
-        def fitness_StayupOver3(schedule = self.schedule):
+
+        def fitness_StayupOver3(schedule=self.schedule):
             sum_StayupOver3 = 0
             StayupDays_Count = 0
             for i in range(0, len(schedule)):
@@ -116,23 +115,35 @@ class Chromosome:
 
             return sum_StayupOver3
 
+        def fitness_overStaffing(schedule=self.schedule):
+            violate = 0
+            for i in range(int(len(schedule[0]) / 4)):
+                for j in range(3):
+                    if Chromosome.requirement[i][j] < self.count_nurse(i, j):
+                        # print('violate at',i,j)
+                        violate += 1
+            return violate
+
         # ----------------------------------------------------------------#
         fitness = 0
-        constraint = [0]*4
-        penalty = [1,50,50,70]
+        constraint = [0] * 5
+        penalty = [1, 10, 20, 10, 30]
 
         constraint[0] = fitness_preference(preference_matrix)
         constraint[1] = fitness_OffDayOver3()
         constraint[2] = fitness_OnDutyOver7()
         constraint[3] = fitness_StayupOver3()
+        constraint[4] = fitness_overStaffing()
 
         if len(constraint) == len(penalty):
-            for i in range(len(constraint)) :
-                fitness += constraint[i]*penalty[i]
-        else :
+            for i in range(len(constraint)):
+                fitness += constraint[i] * penalty[i]
+        else:
             print('Calculate fitness error')
+        if self.isFeasible() == False:
+            fitness += 1000
 
-        print(constraint,fitness)
+        print(constraint, fitness)
         return fitness
     def isFeasible(self):
         demand = Chromosome.requirement
@@ -250,7 +261,7 @@ class Chromosome:
                 if self.isFeasible() == True :
                     break
                 count += 1
-            if count == 4 :
+            if count >= 4 :
                 self.schedule = origin_schedule
                 # print('infeasible')
                 # print('success mutation')
@@ -274,6 +285,7 @@ class Chromosome:
         self.schedule[nurse][4 * day +2] = 0
         self.schedule[nurse][4 * day +3] = 0
         self.schedule[nurse][4 * day + shift] = 1
+
 
 
 
