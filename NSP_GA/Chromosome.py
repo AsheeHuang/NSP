@@ -59,7 +59,6 @@ class Chromosome:
         #     print(i)
         # for i in self.schedule:
         #     print(i)
-
     def cal_fitness(self):
         preference_matrix = Chromosome.preference
 
@@ -127,7 +126,7 @@ class Chromosome:
         # ----------------------------------------------------------------#
         fitness = 0
         constraint = [0] * 5
-        penalty = [1, 10, 20, 10, 30]
+        penalty = [1, 10, 20, 10, 50]
 
         constraint[0] = fitness_preference(preference_matrix)
         constraint[1] = fitness_OffDayOver3()
@@ -142,8 +141,13 @@ class Chromosome:
             print('Calculate fitness error')
         if self.isFeasible() == False:
             fitness += 1000
-
-        print(constraint, fitness)
+            tran = self.transform(self.schedule)
+            for i in tran :
+                print(i)
+            print()
+            # print('infeasible')
+        self.violate = constraint
+        # print(constraint, fitness)
         return fitness
     def isFeasible(self):
         demand = Chromosome.requirement
@@ -188,7 +192,7 @@ class Chromosome:
             for j in range(0, len(supply[i])):
                 if (supply[i][j] > 0):
                     TF = False
-                    # print('supply not enough', i, j)
+                    print('supply not enough', i, j)
                     break
         # print (TF)
         return TF
@@ -249,19 +253,19 @@ class Chromosome:
 
             count = 0
             #fix 5 time , if infeasible ,add penalty
-            while count < 5 :
-                if Chromosome.requirement[d][s] > self.count_nurse(d,s):
-                    candidate = []
-                    for i in range(len(self.schedule)) :
-                        if i != n :
-                            candidate.append(i)
-                    sel =  randint(0,len(candidate)-1)
-                    candidate.pop(sel)
-                    self.change_shift(sel,d,s)
+            while count < 3 :
+                # if Chromosome.requirement[d][s] > self.count_nurse(d,s):
+                candidate = []
+                for i in range(len(self.schedule)) :
+                    if i != n and self.schedule[i][d*4+s] == 1:
+                        candidate.append(i)
+                sel =  randint(0,len(candidate)-1)
+                candidate.pop(sel)
+                self.change_shift(sel,d,s)
                 if self.isFeasible() == True :
                     break
                 count += 1
-            if count >= 4 :
+            if count >= 2 :
                 self.schedule = origin_schedule
                 # print('infeasible')
                 # print('success mutation')
@@ -285,7 +289,3 @@ class Chromosome:
         self.schedule[nurse][4 * day +2] = 0
         self.schedule[nurse][4 * day +3] = 0
         self.schedule[nurse][4 * day + shift] = 1
-
-
-
-

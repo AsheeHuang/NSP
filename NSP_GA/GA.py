@@ -1,16 +1,17 @@
 import Chromosome
+from time import time
 from random import sample,randint,random
 class GA :
     chromosomes = []
     best = 100000000000
     best_sol = []
     def __init__(self,dir,population) :
+        self.chromosomes = []
         self.population = population
         self.read_data(dir)
         for i in range(population) :
             self.chromosomes.append(Chromosome.Chromosome(self.nurse_num,self.day_num,self.shift_num,self.requirement,self.preference))
-
-    def Run(self,total_count = 100000,mutation_rate = 0.5,select_pair = 4):
+    def Run(self,generation = 100,mutation_rate = 0.85,select_pair = 5):
         def Select():
             p_pool = []
             for i in range(select_pair):
@@ -47,34 +48,42 @@ class GA :
                     max = i
             return max
 
-        count = 0
+        count = 1
         #-------------Start Running--------------#
-        while count < total_count :
+        while count <= generation :
             while True :
                 p1,p2 = Select()
                 c_schedule = Crossover(self.chromosomes[p1].schedule,self.chromosomes[p2].schedule)
-                if self.isFeasible(c_schedule) == True :
+                if self.isFeasible(c_schedule) == True or False :
                     break
             new = find_max()
             self.chromosomes[new].schedule = c_schedule
-            self.chromosomes[new].fitness = self.chromosomes[new].cal_fitness()
+            # self.chromosomes[new].fitness = self.chromosomes[new].cal_fitness()
             # newC = Chromosome.Chromosome(requirement=self.requirement,preference = self.preference,schedule = c_schedule)
             # if feasible
 
             if random() <  mutation_rate:
                 self.chromosomes[new].mutation()
-                self.chromosomes[new].fitness = self.chromosomes[new].cal_fitness()
+                # self.chromosomes[new].mutation()
+
+            self.chromosomes[new].fitness = self.chromosomes[new].cal_fitness()
             if self.chromosomes[new].fitness < self.best :
                 self.best = self.chromosomes[new].fitness
                 self.best_sol = self.chromosomes[new].schedule
-            # del_worst()
+            if count % 10000 == 0 :
+                print("Generation : " ,count)
+                fitness_sum = 0
+                for i in self.chromosomes :
+                    fitness_sum += i.fitness
+
+                print(self.chromosomes[new].violate)
+                print("Avg. Fitness = %.2f" % float(fitness_sum/self.population))
+
             count += 1
         print(self.best)
         trans = self.transform(self.best_sol)
         for i in trans :
             print(i)
-
-
     def read_data(self,dir):
         data = open(dir,'r')
         data = data.read().split('\n')
@@ -190,8 +199,15 @@ class GA :
         # print (TF)
         return TF
 if __name__ =='__main__' :
-    dir = './data/60.nsp'
+    dir = './data/1.nsp'
     data = open(dir,'r')
-    NSP = GA(dir,15)
-    NSP.Run()
+
+    for i in range(1) :
+        start_time = time()
+        print('-----------Population = %.2f ---------------' % (i*5))
+        NSP = GA(dir,20)
+        NSP.Run(mutation_rate = 0.85)
+        end_time = time()
+        print("Time : %.2f second" % float(end_time - start_time))
+
     end = True
