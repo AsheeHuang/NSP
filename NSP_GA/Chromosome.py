@@ -1,4 +1,6 @@
 from random import sample,randint
+import Local_search
+
 class Chromosome:
     def __init__(self,nurse_num=0,day_num=0,shift_num=0,requirement=0,preference=0):
         Chromosome.preference = preference
@@ -141,10 +143,10 @@ class Chromosome:
             print('Calculate fitness error')
         if self.isFeasible() == False:
             fitness += 1000
-            tran = self.transform(self.schedule)
-            for i in tran :
-                print(i)
-            print()
+            # tran = self.transform(self.schedule)
+            # for i in tran :
+            #     print(i)
+            # print()
             # print('infeasible')
         self.violate = constraint
         # print(constraint, fitness)
@@ -166,11 +168,10 @@ class Chromosome:
                         # print('more than 1 s', i, j)
                         break
 
-                    if (j % 4 == 2 and j <= len(
-                            schedule[i]) - 4):  # when shife3 is assigned, shift 1 of the next day is infeasible
+                    if (j % 4 == 2 and j <= len(schedule[i]) - 4):  # when shife3 is assigned, shift 1 of the next day is infeasible
                         if (schedule[i][j + 2] == 1):
                             TF = False
-                            # print('s3 than s1', i, j)
+                            # print('s3 than s1', i, (j-2)/4)
                             break
 
                     supply[int(j / 4)][int(j % 4)] -= 1
@@ -192,7 +193,7 @@ class Chromosome:
             for j in range(0, len(supply[i])):
                 if (supply[i][j] > 0):
                     TF = False
-                    print('supply not enough', i, j)
+                    # print('supply not enough', i, j)
                     break
         # print (TF)
         return TF
@@ -222,19 +223,19 @@ class Chromosome:
 
                 if (schedule[i][j] == 1):
                     if (j % 4 == 0):
-                        TSchedule[i][int(j / 4)] = 1
+                        TSchedule[i][int(j / 4)] = 0
                         nurseCount = nurseCount + 1
 
                     elif (j % 4 == 1):
-                        TSchedule[i][int(j / 4)] = 2
+                        TSchedule[i][int(j / 4)] = 1
                         nurseCount = nurseCount + 1
 
                     elif (j % 4 == 2):
-                        TSchedule[i][int(j / 4)] = 3
+                        TSchedule[i][int(j / 4)] = 2
                         nurseCount = nurseCount + 1
 
                     elif (j % 4 == 3):
-                        TSchedule[i][int(j / 4)] = 4
+                        TSchedule[i][int(j / 4)] = 3
                         nurseCount = nurseCount + 1
 
                 else:
@@ -248,27 +249,60 @@ class Chromosome:
 
         # transform(None)
     def mutation(self):
-        def fix(n,d,s,m): #nurse ,day, origin shift,current shift
-            origin_schedule = self.schedule
+        origin_schedule = self.schedule
 
-            count = 0
-            #fix 5 time , if infeasible ,add penalty
-            while count < 3 :
-                # if Chromosome.requirement[d][s] > self.count_nurse(d,s):
+        def max_improve(nurse, day, shift):  # return the shift improve most
+            preference = Chromosome.preference
+            prefer = preference[nurse][day * 4 + shift]
+            max = -10
+            s = -1
+            for i in range(4):
+                if i != shift:
+                    if prefer - preference[nurse][day * 4 + i] >= max:
+                        max = prefer - preference[nurse][day * 4 + i]
+                        s = i
+            return s
+        def fix(nurse, day, next_shift):
+            schedule = self.schedule
+            if next_shift == 0 and schedule[nurse][(day - 1) * 4 + 2] == 1:
+                day = day - 1
+                shift = max_improve(nurse, day, 0)
+
                 candidate = []
-                for i in range(len(self.schedule)) :
-                    if i != n and self.schedule[i][d*4+s] == 1:
-                        candidate.append(i)
-                sel =  randint(0,len(candidate)-1)
-                candidate.pop(sel)
-                self.change_shift(sel,d,s)
-                if self.isFeasible() == True :
-                    break
-                count += 1
-            if count >= 2 :
-                self.schedule = origin_schedule
-                # print('infeasible')
-                # print('success mutation')
+                while True:  # candidate can't be empty
+                    for i in range(len(schedule)):
+                        if schedule[i][day * 4 + shift] == 1:
+                            candidate.append(i)
+                    if len(candidate) > 0:
+                        break
+                    else:
+                        shift = sample([0, 1, 3], 1)[0]
+
+                sel = randint(0, len(candidate) - 1)
+                self.change_shift(nurse, day, shift)
+                self.change_shift(candidate[sel], day, 2)
+
+                fix(candidate[sel], day, 2)
+
+            if next_shift == 2 and day+1<int(len(schedule[0])/4) and  schedule[nurse][(day + 1) * 4] == 1:
+                day = day + 1
+                shift = max_improve(nurse, day, 0)
+
+                candidate = []
+                while True:  # candidate can't be empty
+                    for i in range(len(schedule)):
+                        if schedule[i][day * 4 + shift] == 1:
+                            candidate.append(i)
+                    if len(candidate) > 0:
+                        break
+                    else:
+                        shift = sample([1, 2, 3], 1)[0]
+
+                sel = randint(0, len(candidate) - 1)
+                self.change_shift(nurse, day, shift)
+                self.change_shift(candidate[sel], day, 0)
+
+                fix(candidate[sel], day, 0)
 
         n = randint(0,len(self.schedule)-1)
         d = randint(0,len(self.schedule[0])/4-1)
@@ -278,9 +312,35 @@ class Chromosome:
             if self.schedule[n][d*4+i] == 1 :
                 shift_num = randint(1,3)
                 self.schedule[n][d*4+i] = 0
-                self.schedule[n][d*4+(i+shift_num)%4] = 1
+                next_shift = (i+shift_num)%4
+                origin_shift = i
+                self.schedule[n][d*4+next_shift] = 1
 
-                fix(n,d,i,(i+shift_num)%4)
+                fix(n,d,next_shift)
+
+                while True :
+                    candidate = []
+                    for i in range(len(self.schedule)):
+                        if self.schedule[i][d * 4 + next_shift] == 1:
+                            candidate.append(i)
+                    # print(candidate)
+                    # if candidate exist
+                    if len(candidate) > 0 :
+                        break
+                    else :
+                        next_shift = sample([0,1,2,3].remove(i))
+                        self.change_shift(n,d,next_shift)
+
+                self.change_shift(n, d, next_shift)  # switch nurse from original shift to better shift
+                # print("nurse :" + str(n) + "   day :" + str(d), "    =", origin_shift, "->", next_shift)
+                sel_nurse = randint(0, len(candidate) - 1)
+                self.change_shift(candidate[sel_nurse], d, origin_shift)
+                # print("nurse :" + str(candidate[sel_nurse]) + "   day :" + str(d), "    =", next_shift, "->",origin_shift)
+
+                fix(candidate[sel_nurse], d, origin_shift)
+                if self.isFeasible() is False :
+                    self.schedule=origin_schedule
+
                 break
         # print(self.schedule[n][d * 4:d * 4 + 4])
     def change_shift(self,nurse,day,shift):

@@ -1,6 +1,7 @@
 import Chromosome
 from time import time
 from random import sample,randint,random
+import Local_search
 class GA :
     chromosomes = []
     best = 100000000000
@@ -11,7 +12,7 @@ class GA :
         self.read_data(dir)
         for i in range(population) :
             self.chromosomes.append(Chromosome.Chromosome(self.nurse_num,self.day_num,self.shift_num,self.requirement,self.preference))
-    def Run(self,generation = 100,mutation_rate = 0.85,select_pair = 5):
+    def Run(self,generation = 10000,mutation_rate = 0.3,select_pair = 4):
         def Select():
             p_pool = []
             for i in range(select_pair):
@@ -48,7 +49,7 @@ class GA :
                     max = i
             return max
 
-        count = 1
+        count = 0
         #-------------Start Running--------------#
         while count <= generation :
             while True :
@@ -68,9 +69,23 @@ class GA :
 
             self.chromosomes[new].fitness = self.chromosomes[new].cal_fitness()
             if self.chromosomes[new].fitness < self.best :
-                self.best = self.chromosomes[new].fitness
-                self.best_sol = self.chromosomes[new].schedule
-            if count % 10000 == 0 :
+                origin_schedule = self.chromosomes[new].schedule
+
+                # Local_search.local_search(self.chromosomes[new])
+
+                new_fitness = self.chromosomes[new].cal_fitness()
+                # print("After local search:",new_fitness,"before :",self.chromosomes[new].fitness)
+
+                if(new_fitness < self.chromosomes[new].fitness) :
+                    self.chromosomes[new].fitness = new_fitness
+                    self.best = self.chromosomes[new].fitness
+                    self.best_sol = self.chromosomes[new].schedule
+                else:
+                    self.best = self.chromosomes[new].fitness
+                    self.best_sol = origin_schedule
+
+
+            if count % 1000 == 0 :
                 print("Generation : " ,count)
                 fitness_sum = 0
                 for i in self.chromosomes :
@@ -129,19 +144,19 @@ class GA :
 
                 if (schedule[i][j] == 1):
                     if (j % 4 == 0):
-                        TSchedule[i][int(j / 4)] = 1
+                        TSchedule[i][int(j / 4)] = 0
                         nurseCount = nurseCount + 1
 
                     elif (j % 4 == 1):
-                        TSchedule[i][int(j / 4)] = 2
+                        TSchedule[i][int(j / 4)] = 1
                         nurseCount = nurseCount + 1
 
                     elif (j % 4 == 2):
-                        TSchedule[i][int(j / 4)] = 3
+                        TSchedule[i][int(j / 4)] = 2
                         nurseCount = nurseCount + 1
 
                     elif (j % 4 == 3):
-                        TSchedule[i][int(j / 4)] = 4
+                        TSchedule[i][int(j / 4)] = 3
                         nurseCount = nurseCount + 1
 
                 else:
@@ -202,11 +217,13 @@ if __name__ =='__main__' :
     dir = './data/1.nsp'
     data = open(dir,'r')
 
-    for i in range(1) :
+    for i in range(20) :
         start_time = time()
-        print('-----------Population = %.2f ---------------' % (i*5))
-        NSP = GA(dir,20)
-        NSP.Run(mutation_rate = 0.85)
+        population = 15
+        mutation = 0.4
+        print('-----------Population = %d Mutation rate = %.2f---------------' % (population,mutation))
+        NSP = GA(dir,population)
+        NSP.Run(generation=10000,mutation_rate = mutation)
         end_time = time()
         print("Time : %.2f second" % float(end_time - start_time))
 
