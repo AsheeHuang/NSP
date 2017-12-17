@@ -12,7 +12,7 @@ class GA :
         self.read_data(dir)
         for i in range(population) :
             self.chromosomes.append(Chromosome.Chromosome(self.nurse_num,self.day_num,self.shift_num,self.requirement,self.preference))
-    def Run(self,generation = 10000,mutation_rate = 0.3,select_pair = 4):
+    def Run(self,generation = 10000,mutation_rate = 0.4,select_pair = 4):
         def Select():
             p_pool = []
             for i in range(select_pair):
@@ -64,25 +64,30 @@ class GA :
             # if feasible
 
             if random() <  mutation_rate:
+                # repeat = randint(1,2)
+                # for i in range(repeat):
                 self.chromosomes[new].mutation()
                 # self.chromosomes[new].mutation()
 
             self.chromosomes[new].fitness = self.chromosomes[new].cal_fitness()
             if self.chromosomes[new].fitness < self.best :
-                origin_schedule = self.chromosomes[new].schedule
-
+                # origin_schedule = self.chromosomes[new].schedule
+                # print("Before :",self.chromosomes[new].violate)
                 # Local_search.local_search(self.chromosomes[new])
 
-                new_fitness = self.chromosomes[new].cal_fitness()
-                # print("After local search:",new_fitness,"before :",self.chromosomes[new].fitness)
-
-                if(new_fitness < self.chromosomes[new].fitness) :
-                    self.chromosomes[new].fitness = new_fitness
-                    self.best = self.chromosomes[new].fitness
-                    self.best_sol = self.chromosomes[new].schedule
-                else:
-                    self.best = self.chromosomes[new].fitness
-                    self.best_sol = origin_schedule
+                # new_fitness = self.chromosomes[new].cal_fitness()
+                # # print("After :", self.chromosomes[new].violate)
+                # # print("After local search:",new_fitness,"before :",self.chromosomes[new].fitness)
+                #
+                # if(new_fitness < self.chromosomes[new].fitness) :
+                #     self.chromosomes[new].fitness = new_fitness
+                #     self.best = self.chromosomes[new].fitness
+                #     self.best_sol = self.chromosomes[new].schedule
+                # else:
+                #     self.best = self.chromosomes[new].fitness
+                #     self.best_sol = origin_schedule
+                self.best = self.chromosomes[new].fitness
+                self.best_sol = self.chromosomes[new].schedule
 
 
             if count % 1000 == 0 :
@@ -214,16 +219,17 @@ class GA :
         # print (TF)
         return TF
 if __name__ =='__main__' :
-    dir = './data/1.nsp'
+    dir = './data/60.nsp'
     data = open(dir,'r')
 
-    for i in range(20) :
+    for i in range(1) :
         start_time = time()
         population = 15
-        mutation = 0.4
-        print('-----------Population = %d Mutation rate = %.2f---------------' % (population,mutation))
+        mutation_rate = 0.4
+        print('\n-----------Population = %d Mutation rate = %.2f---------------' % (population,mutation_rate))
         NSP = GA(dir,population)
-        NSP.Run(generation=10000,mutation_rate = mutation)
+        NSP.Run(generation=100000,mutation_rate = mutation_rate)
+        # print(NSP.chromosomes[0].schedule)
         end_time = time()
         print("Time : %.2f second" % float(end_time - start_time))
 

@@ -266,7 +266,7 @@ class Chromosome:
             schedule = self.schedule
             if next_shift == 0 and schedule[nurse][(day - 1) * 4 + 2] == 1:
                 day = day - 1
-                shift = max_improve(nurse, day, 0)
+                shift = max_improve(nurse, day, 2)
 
                 candidate = []
                 while True:  # candidate can't be empty
