@@ -67,7 +67,7 @@ class GA :
                 # repeat = randint(1,2)
                 # for i in range(repeat):
                 self.chromosomes[new].mutation()
-                # self.chromosomes[new].mutation()
+                self.chromosomes[new].mutation()
 
             self.chromosomes[new].fitness = self.chromosomes[new].cal_fitness()
             if self.chromosomes[new].fitness < self.best :
@@ -219,16 +219,16 @@ class GA :
         # print (TF)
         return TF
 if __name__ =='__main__' :
-    dir = './data/60.nsp'
+    dir = './data/1.nsp'
     data = open(dir,'r')
 
-    for i in range(1) :
+    for i in range(5) :
         start_time = time()
         population = 15
         mutation_rate = 0.4
         print('\n-----------Population = %d Mutation rate = %.2f---------------' % (population,mutation_rate))
         NSP = GA(dir,population)
-        NSP.Run(generation=100000,mutation_rate = mutation_rate)
+        NSP.Run(generation=15000,mutation_rate = mutation_rate)
         # print(NSP.chromosomes[0].schedule)
         end_time = time()
         print("Time : %.2f second" % float(end_time - start_time))
