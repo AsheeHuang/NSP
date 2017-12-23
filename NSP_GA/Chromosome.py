@@ -284,7 +284,7 @@ class Chromosome:
 
                 fix(candidate[sel], day, 2)
 
-            if next_shift == 2 and day+1<int(len(schedule[0])/4) and  schedule[nurse][(day + 1) * 4] == 1:
+            elif next_shift == 2 and day+1<int(len(schedule[0])/4) and  schedule[nurse][(day + 1) * 4] == 1:
                 day = day + 1
                 shift = max_improve(nurse, day, 0)
 
